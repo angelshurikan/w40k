@@ -1,0 +1,33 @@
+<form class="actor-sheet" data-actor-id="{{actor.id}}">
+  <header class="sheet-header">
+    <h1>
+      <label for="actor-name">Nom du personnage</label>
+    </h1>
+    <input id="actor-name" type="text" name="name" value="{{actor.name}}" />
+  </header>
+  <section class="sheet-body">
+    <div class="form-group">
+      <label for="hp-value">Vie</label>
+      <div>
+        <input id="hp-value" type="number" name="system.attributes.hp.value" value="{{system.attributes.hp.value}}" min="0" />
+        /
+        <label for="hp-max" class="sr-only">max</label>
+        <input id="hp-max" type="number" name="system.attributes.hp.max" value="{{system.attributes.hp.max}}" min="1" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="mana-value">Mana</label>
+      <div>
+        <input id="mana-value" type="number" name="system.attributes.mana.value" value="{{system.attributes.mana.value}}" min="0" />
+        /
+        <label for="mana-max" class="sr-only">max</label>
+        <input id="mana-max" type="number" name="system.attributes.mana.max" value="{{system.attributes.mana.max}}" min="0" />
+      </div>
+    </div>
+  </section>
+
+  <footer class="sheet-footer">
+    <button type="submit">Sauvegarder</button>
+  </footer>
+</form>

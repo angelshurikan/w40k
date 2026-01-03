@@ -1,40 +1,22 @@
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-yarn.lock
-
-# IDE and Editors
+# IDE - JetBrains
 .idea/
-.vscode/
-*.swp
-*.swo
-*~
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Foundry VTT - LevelDB pack files (generated/runtime)
+packs/*/LOG
+packs/*/LOCK
+packs/*/CURRENT
+packs/*/*.log
+packs/*/MANIFEST-*
+
+# OS
 .DS_Store
 
-# Operating System
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Foundry VTT
-# Pack database lock files (temporary runtime files)
-packs/**/LOCK
-packs/**/LOG
-packs/**/LOG.old
-
-# Build and Distribution
-dist/
-build/
-*.zip
-
-# Environment and Configuration
+# Environment
 .env
-.env.local
-.env.*.local
 
-# Logs
-logs/
-*.log
