@@ -1,0 +1,66 @@
+{
+  "id": "forkW40k",
+  "title": "Warhammer 40k (CUL)",
+  "description": "A human-readable description of your system.",
+  "version": "25.12.30",
+  "compatibility": {
+    "minimum": 13,
+    "verified": 13
+  },
+  "authors": [{
+    "name": "me",
+    "url": "YOUR WEBSITE ADDRESS HERE",
+    "email": "YOUR EMAIL ADDRESS HERE",
+    "discord": "YOUR DISCORD USERNAME HERE"
+  }],
+  "esmodules": ["forkW40k.mjs"],
+  "styles": ["forkW40k.css"],
+  "packs": [{
+    "name": "monsters",
+    "label": "My Monsters",
+    "type": "Actor"
+  },
+  {
+    "name": "items",
+    "label": "My Items",
+    "type": "Item"
+  }],
+  "languages": [{
+    "lang": "fr",
+    "name": "French",
+    "path": "lang/fr.json"
+  }],
+  "documentTypes": {
+    "Actor": {
+      "hero": {
+        "htmlFields": [
+            "details.description"
+        ]
+       },
+      "villain": { 
+        "htmlFields": [
+            "details.description"
+        ]
+       }
+    },
+    "Item": {
+      "weapon": {
+        "htmlFields": [
+            "details.description"
+        ]
+      },
+      "spell": {
+        "htmlFields": [
+            "details.description"
+        ]
+      }
+    }
+  },
+  "socket": false,
+  "initiative": "1d20",
+  "grid": {
+    "distance": 5,
+    "units": "m"
+  },
+  "primaryTokenAttribute": "attributes.hp"
+}
