@@ -1,0 +1,24 @@
+{
+  "name": "forkw40k",
+  "version": "1.0.0",
+  "description": "Warhammer 40k (CUL) — Système Foundry VTT\r =========================================",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/angelshurikan/w40k.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/angelshurikan/w40k/issues"
+  },
+  "homepage": "https://github.com/angelshurikan/w40k#readme",
+  "devDependencies": {
+    "@league-of-foundry-developers/foundry-vtt-types": "^13.346.0-beta.20250812191140"
+  }
+}

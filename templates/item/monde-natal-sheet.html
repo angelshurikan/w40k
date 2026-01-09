@@ -7,6 +7,15 @@
   </header>
 
   <section class="sheet-body">
+
+
+    <h2>Description</h2>
+
+    <div class="form-group">
+      <label for="system-description">Texte</label>
+      <textarea id="system-description" name="system.description" rows="10">{{system.description}}</textarea>
+    </div>
+
     <hr />
 
     <h2>Caractéristiques (valeurs par défaut)</h2>
@@ -75,19 +84,5 @@
     </div>
 
     <hr />
-
-    <h2>Description</h2>
-
-    <div class="form-group">
-      <label for="details-description">Texte</label>
-      <textarea id="details-description" name="details.description" rows="8">{{item.details.description}}</textarea>
-    </div>
-
-    <div class="form-group">
-      <label class="sr-only" for="details-description-editor">Éditeur</label>
-      <div id="details-description-editor">
-        {{editor item.details.description target="details.description" button=true owner=owner editable=editable}}
-      </div>
-    </div>
   </section>
 </form>

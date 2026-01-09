@@ -5,7 +5,7 @@
 > - `MondeNatal` est un **Item** de type `mondeNatal`.
 > - Champs (implémentation actuelle) :
 >   - `item.name` → `title`
->   - `item.details.description` → `description`
+>   - `item.system.description` → `description`
 >   - `item.system.stats.*` → caractéristiques :
 >     `weaponSkill`, `ballisticSkill`, `strength`, `toughness`, `agility`, `intelligence`,
 >     `perception`, `willpower`, `fellowship`, `fate`, `insanity`, `corruption`

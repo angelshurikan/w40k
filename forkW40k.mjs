@@ -1,4 +1,10 @@
 /* eslint-disable no-unused-vars */
+/**
+ * Références de types pour l'IDE (Foundry VTT v13)
+ * Nécessite le devDependency: @league-of-foundry-developers/foundry-vtt-types
+ */
+/// <reference types="@league-of-foundry-developers/foundry-vtt-types" />
+
 /*
   Project: forkW40k — Foundry VTT System
   Description: Warhammer 40k (custom system) for Foundry Virtual Tabletop (Foundry VTT)
@@ -47,6 +53,37 @@ export const SYSTEM_ID = "forkW40k";
 export const SYSTEM_VERSION = "25.12.30";
 export const COMPAT_MINIMUM = 13;
 
+// Constantes partagées (évite recréations à chaque submit)
+const MONDE_NATAL_STAT_DEFAULTS = Object.freeze({
+  weaponSkill: 0,
+  ballisticSkill: 0,
+  strength: 0,
+  toughness: 0,
+  agility: 0,
+  intelligence: 0,
+  perception: 0,
+  willpower: 0,
+  fellowship: 0,
+  fate: 0,
+  insanity: 0,
+  corruption: 0
+});
+
+const MONDE_NATAL_NUM_KEYS = Object.freeze([
+  "system.stats.weaponSkill",
+  "system.stats.ballisticSkill",
+  "system.stats.strength",
+  "system.stats.toughness",
+  "system.stats.agility",
+  "system.stats.intelligence",
+  "system.stats.perception",
+  "system.stats.willpower",
+  "system.stats.fellowship",
+  "system.stats.fate",
+  "system.stats.insanity",
+  "system.stats.corruption"
+]);
+
 // Point d'extension: initialisation du système. Compléter selon les besoins.
 Hooks.once("init", () => {
   console.log(`${SYSTEM_ID} v${SYSTEM_VERSION} initialisation (compatibilité Foundry >= ${COMPAT_MINIMUM})`);
@@ -54,8 +91,8 @@ Hooks.once("init", () => {
   /**
    * MondeNatalItemSheet
    * - Feuille d'Item dédiée au type `mondeNatal`
-   * - Permet d'éditer l'origine (planetLabel), une description, et les caractéristiques par défaut
-   * - Le transfert/copie vers l'Actor sera fait plus tard (hors périmètre V1)
+   * - Édite la description (system.description) + les caractéristiques par défaut (system.stats.*)
+   * - La copie vers l'Actor sera implémentée plus tard (hors périmètre actuel)
    */
   class MondeNatalItemSheet extends ItemSheet {
     static get defaultOptions() {
@@ -75,24 +112,11 @@ Hooks.once("init", () => {
       context.system = this.item.system || {};
 
       // Valeurs par défaut non persistées (évite les undefined dans l'UI)
+      context.system.description = context.system.description ?? "";
       context.system.stats = context.system.stats ?? {};
 
       const s = context.system.stats;
-      const defaults = {
-        weaponSkill: 0,
-        ballisticSkill: 0,
-        strength: 0,
-        toughness: 0,
-        agility: 0,
-        intelligence: 0,
-        perception: 0,
-        willpower: 0,
-        fellowship: 0,
-        fate: 0,
-        insanity: 0,
-        corruption: 0
-      };
-      for (const [k, v] of Object.entries(defaults)) {
+      for (const [k, v] of Object.entries(MONDE_NATAL_STAT_DEFAULTS)) {
         if (s[k] === undefined || s[k] === null || s[k] === "") s[k] = v;
       }
 
@@ -100,29 +124,17 @@ Hooks.once("init", () => {
     }
 
     async _updateObject(event, formData) {
-      // Normaliser les champs numériques en entiers (si présents)
-      const numKeys = [
-        "system.stats.weaponSkill",
-        "system.stats.ballisticSkill",
-        "system.stats.strength",
-        "system.stats.toughness",
-        "system.stats.agility",
-        "system.stats.intelligence",
-        "system.stats.perception",
-        "system.stats.willpower",
-        "system.stats.fellowship",
-        "system.stats.fate",
-        "system.stats.insanity",
-        "system.stats.corruption"
-      ];
-
       const toInt = (v, fallback = 0) => {
         const n = Number(v);
         return Number.isFinite(n) ? Math.trunc(n) : fallback;
       };
 
-      for (const k of numKeys) {
+      for (const k of MONDE_NATAL_NUM_KEYS) {
         if (formData[k] !== undefined) formData[k] = toInt(formData[k], 0);
+      }
+
+      if (formData["system.description"] !== undefined && formData["system.description"] !== null) {
+        formData["system.description"] = String(formData["system.description"]);
       }
 
       await this.object.update(formData);

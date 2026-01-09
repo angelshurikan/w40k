@@ -55,9 +55,7 @@
         ]
       },
       "mondeNatal": {
-        "htmlFields": [
-          "details.description"
-        ]
+        "htmlFields": []
       }
     }
   },
