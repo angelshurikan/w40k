@@ -60,7 +60,6 @@ Important : la documentation principale et les instructions courtes sont documen
 - Ouvrir une issue pour bug / demande de fonctionnalité.
 - Proposer une Pull Request (PR) claire et ciblée.
 - Respecter le style du code et ajouter des exemples/tests si applicable.
-- Mettre à jour `architecture.md` quand le modèle de données (noms de champs, relations) évolue, afin que le diagramme reste aligné avec l'implémentation.
 
 ## Licence
 
