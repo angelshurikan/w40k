@@ -53,6 +53,11 @@
         "htmlFields": [
             "details.description"
         ]
+      },
+      "mondeNatal": {
+        "htmlFields": [
+          "details.description"
+        ]
       }
     }
   },

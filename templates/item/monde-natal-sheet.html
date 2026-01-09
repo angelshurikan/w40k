@@ -1,0 +1,87 @@
+<form class="{{cssClass}}" autocomplete="off">
+  <header class="sheet-header">
+    <h1 class="charname">
+      <label for="item-name" class="sr-only">Nom</label>
+      <input id="item-name" name="name" type="text" value="{{item.name}}" placeholder="Monde natal" />
+    </h1>
+  </header>
+
+  <section class="sheet-body">
+    <div class="form-group">
+      <label for="planet-label">Origine / planète natale</label>
+      <input id="planet-label" type="text" name="system.planetLabel" value="{{system.planetLabel}}" />
+    </div>
+
+    <hr />
+
+    <h2>Caractéristiques (valeurs par défaut)</h2>
+    <p class="notes">Ces valeurs servent de base au personnage (copie vers l’Actor sera implémentée plus tard).</p>
+
+    <div class="grid-2col">
+      <div class="form-group">
+        <label for="ws">Weapon Skill (WS)</label>
+        <input id="ws" type="number" name="system.stats.weaponSkill" value="{{system.stats.weaponSkill}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="bs">Ballistic Skill (BS)</label>
+        <input id="bs" type="number" name="system.stats.ballisticSkill" value="{{system.stats.ballisticSkill}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="str">Strength (S)</label>
+        <input id="str" type="number" name="system.stats.strength" value="{{system.stats.strength}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="tgh">Toughness (T)</label>
+        <input id="tgh" type="number" name="system.stats.toughness" value="{{system.stats.toughness}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="agi">Agility (Ag)</label>
+        <input id="agi" type="number" name="system.stats.agility" value="{{system.stats.agility}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="int">Intelligence (Int)</label>
+        <input id="int" type="number" name="system.stats.intelligence" value="{{system.stats.intelligence}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="per">Perception (Per)</label>
+        <input id="per" type="number" name="system.stats.perception" value="{{system.stats.perception}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="wil">Willpower (WP)</label>
+        <input id="wil" type="number" name="system.stats.willpower" value="{{system.stats.willpower}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="fel">Fellowship (Fel)</label>
+        <input id="fel" type="number" name="system.stats.fellowship" value="{{system.stats.fellowship}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="fate">Fate</label>
+        <input id="fate" type="number" name="system.stats.fate" value="{{system.stats.fate}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="insanity">Insanity</label>
+        <input id="insanity" type="number" name="system.stats.insanity" value="{{system.stats.insanity}}" step="1" />
+      </div>
+
+      <div class="form-group">
+        <label for="corruption">Corruption</label>
+        <input id="corruption" type="number" name="system.stats.corruption" value="{{system.stats.corruption}}" step="1" />
+      </div>
+    </div>
+
+    <hr />
+
+    <h2>Description</h2>
+    {{editor item.details.description target="details.description" button=true owner=owner editable=editable}}
+  </section>
+</form>

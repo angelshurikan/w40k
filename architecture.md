@@ -1,68 +1,77 @@
 # Diagramme relations (mermaid)
+
+> Correspondance Foundry VTT (v13)
+>
+> - `MondeNatal` est un **Item** de type `mondeNatal`.
+> - Champs (implémentation actuelle) :
+>   - `item.name` → `title`
+>   - `item.system.planetLabel` → `planetLabel`
+>   - `item.details.description` → `description`
+>   - `item.system.stats.*` → caractéristiques :
+>     `weaponSkill`, `ballisticSkill`, `strength`, `toughness`, `agility`, `intelligence`,
+>     `perception`, `willpower`, `fellowship`, `fate`, `insanity`, `corruption`
+>
 ```mermaid
 classDiagram
     class Personnage {
       int id
-      string Prenom
-      string Nom
-      enum[H|F] Genre
-      int ExperienceMax
-      int ExperienceCurrent
-      int VieMax
-      int VieCurrent
-      int ManaMax
-      int ManaCurrent
+      string firstName
+      string lastName
+      enum[H|F] gender
+      int experienceMax
+      int experienceCurrent
+      int hpMax
+      int hpCurrent
+      int manaMax
+      int manaCurrent
       ---
-      int Cac
-      int CT
-      int Strenght
-      int Endurance
-      int Agility
-      int Intelligence
-      int Perception
-      int MentalStrenght
-      int Sociability
-      int Destin
-      int Folie
-      int Corruption
+      int weaponSkill
+      int ballisticSkill
+      int strength
+      int toughness
+      int agility
+      int intelligence
+      int perception
+      int willpower
+      int fellowship
+      int fate
+      int insanity
+      int corruption
     }
     class MondeNatal {
-      int ID
-      string Title
-      string Description
-      string PlaneteNatalLabel
+      int id
+      string title
+      string description
+      string planetLabel
       ---
-      int Cac
-      int CT
-      int Strenght
-      int Endurance
-      int Agility
-      int Intelligence
-      int Perception
-      int MentalStrenght
-      int Sociability
-      int Destin
-      int Folie
-      int Corruption
+      int weaponSkill
+      int ballisticSkill
+      int strength
+      int toughness
+      int agility
+      int intelligence
+      int perception
+      int willpower
+      int fellowship
+      int fate
+      int insanity
+      int corruption
     }
-    class Term {
-      int ID
-      string Name
-      string Slug
-      string Description
-      string Type # Age,Peau,DescriptionPhysique,Cheveux,Yeux,Comportement,ParticularitePhysique,Carriere,Trait,PlaneteNatal,EffetAssermentation,DivinationImperiales
+
+    class Items {
+        # Liste des items Age,Peau,DescriptionPhysique,Cheveux,Yeux,Comportement,ParticularitePhysique,Carriere,Trait,PlaneteNatal,EffetAssermentation,DivinationImperiales
+      int id
+      string name
+      string slug
+      string description
       ----
-      string Entity
-      string Label
-      int Number
+      string entity
+      string label
+      int number
     }
 
-
-
-
+    %% MondeNatal définit les valeurs de base (copiées) des caractéristiques du Personnage
     Personnage <|-- MondeNatal
-    Personnage <|-- Term
-    MondeNatal --|> Term
-```
-
-
+    Personnage <|-- Items
+    MondeNatal --|> Items
+````

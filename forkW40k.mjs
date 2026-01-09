@@ -50,8 +50,93 @@ export const COMPAT_MINIMUM = 13;
 // Point d'extension: initialisation du système. Compléter selon les besoins.
 Hooks.once("init", () => {
   console.log(`${SYSTEM_ID} v${SYSTEM_VERSION} initialisation (compatibilité Foundry >= ${COMPAT_MINIMUM})`);
-  // Register a minimal player actor sheet for this system.
 
+  /**
+   * MondeNatalItemSheet
+   * - Feuille d'Item dédiée au type `mondeNatal`
+   * - Permet d'éditer l'origine (planetLabel), une description, et les caractéristiques par défaut
+   * - Le transfert/copie vers l'Actor sera fait plus tard (hors périmètre V1)
+   */
+  class MondeNatalItemSheet extends ItemSheet {
+    static get defaultOptions() {
+      return mergeObject(super.defaultOptions, {
+        classes: ["forkW40k", "sheet", "item", "monde-natal"],
+        template: `systems/${SYSTEM_ID}/templates/item/monde-natal-sheet.html`,
+        width: 560,
+        height: 720,
+        resizable: true
+      });
+    }
+
+    getData(options) {
+      const context = super.getData(options);
+
+      // Alias pratique pour le template
+      context.system = this.item.system || {};
+
+      // Valeurs par défaut non persistées (évite les undefined dans l'UI)
+      context.system.planetLabel = context.system.planetLabel ?? "";
+      context.system.stats = context.system.stats ?? {};
+
+      const s = context.system.stats;
+      const defaults = {
+        weaponSkill: 0,
+        ballisticSkill: 0,
+        strength: 0,
+        toughness: 0,
+        agility: 0,
+        intelligence: 0,
+        perception: 0,
+        willpower: 0,
+        fellowship: 0,
+        fate: 0,
+        insanity: 0,
+        corruption: 0
+      };
+      for (const [k, v] of Object.entries(defaults)) {
+        if (s[k] === undefined || s[k] === null || s[k] === "") s[k] = v;
+      }
+
+      return context;
+    }
+
+    async _updateObject(event, formData) {
+      // Normaliser les champs numériques en entiers (si présents)
+      const numKeys = [
+        "system.stats.weaponSkill",
+        "system.stats.ballisticSkill",
+        "system.stats.strength",
+        "system.stats.toughness",
+        "system.stats.agility",
+        "system.stats.intelligence",
+        "system.stats.perception",
+        "system.stats.willpower",
+        "system.stats.fellowship",
+        "system.stats.fate",
+        "system.stats.insanity",
+        "system.stats.corruption"
+      ];
+
+      const toInt = (v, fallback = 0) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? Math.trunc(n) : fallback;
+      };
+
+      for (const k of numKeys) {
+        if (formData[k] !== undefined) formData[k] = toInt(formData[k], 0);
+      }
+
+      await this.object.update(formData);
+    }
+  }
+
+  // Enregistrer la sheet dédiée au type mondeNatal
+  Items.registerSheet(SYSTEM_ID, MondeNatalItemSheet, {
+    types: ["mondeNatal"],
+    makeDefault: true
+  });
+
+  // Register a minimal player actor sheet for this system.
   /**
    * PlayerActorSheet
    * - Affiche un formulaire simple pour les personnages joueurs
@@ -83,7 +168,7 @@ Hooks.once("init", () => {
       context.system.attributes.mana = context.system.attributes.mana || { value: 5, max: 5 };
 
       // Déterminer si l'utilisateur courant peut éditer (ici : seulement les GMs)
-      context.canEdit = (typeof game !== "undefined" && game.user && game.user.isGM) ? true : false;
+      context.canEdit = !!(typeof game !== "undefined" && game.user && game.user.isGM);
       // stocker localement pour accès dans les méthodes
       this.canEdit = context.canEdit;
 
