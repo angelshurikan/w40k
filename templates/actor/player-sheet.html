@@ -10,6 +10,13 @@
     {{/if}}
   </header>
   <section class="sheet-body">
+    {{#if canEdit}}
+      {{#unless system.homeworldUuid}}
+        <p class="notes">Choisis d’abord un <strong>Monde natal</strong> pour activer et filtrer les listes (Eye, Peau, Cheveu, etc.).</p>
+        <hr />
+      {{/unless}}
+    {{/if}}
+
     <div class="form-group">
       <label for="hp-value">Vie</label>
       <div>
@@ -77,7 +84,6 @@
           <select id="eye-uuid-disabled" name="system.eyeUuid" disabled>
             <option value="">— Aucun —</option>
           </select>
-          <p class="notes">Choisis d’abord un Monde natal pour filtrer la liste des Eyes.</p>
         {{/if}}
       {{else}}
         <span class="readonly-field">{{selectedEyeName}}</span>
@@ -131,6 +137,183 @@
         {{/if}}
       {{else}}
         <span class="readonly-field">{{selectedHairName}}</span>
+      {{/if}}
+    </div>
+
+    <hr />
+
+    <div class="form-group">
+      <label for="planete-natal-uuid-enabled">Planète natale</label>
+      {{#if canEdit}}
+        {{#if system.homeworldUuid}}
+          <select id="planete-natal-uuid-enabled" name="system.planeteNatalUuid">
+            <option value="">— Aucun —</option>
+            {{#each planeteNatalChoices as |p|}}
+              {{#if p.selected}}
+                <option value="{{p.uuid}}" selected>{{p.name}}{{#if p.source}} ({{p.source}}){{/if}}</option>
+              {{else}}
+                <option value="{{p.uuid}}">{{p.name}}{{#if p.source}} ({{p.source}}){{/if}}</option>
+              {{/if}}
+            {{/each}}
+          </select>
+        {{else}}
+          <label for="planete-natal-uuid-disabled" class="sr-only">Planète natale</label>
+          <select id="planete-natal-uuid-disabled" name="system.planeteNatalUuid" disabled>
+            <option value="">— Aucun —</option>
+          </select>
+        {{/if}}
+      {{else}}
+        <span class="readonly-field">{{selectedPlaneteNatalName}}</span>
+      {{/if}}
+    </div>
+
+    <div class="form-group">
+      <label for="description-physique-uuid-enabled">Description physique</label>
+      {{#if canEdit}}
+        {{#if system.homeworldUuid}}
+          <select id="description-physique-uuid-enabled" name="system.descriptionPhysiqueUuid">
+            <option value="">— Aucun —</option>
+            {{#each descriptionPhysiqueChoices as |d|}}
+              {{#if d.selected}}
+                <option value="{{d.uuid}}" selected>{{d.name}}{{#if d.source}} ({{d.source}}){{/if}}</option>
+              {{else}}
+                <option value="{{d.uuid}}">{{d.name}}{{#if d.source}} ({{d.source}}){{/if}}</option>
+              {{/if}}
+            {{/each}}
+          </select>
+        {{else}}
+          <label for="description-physique-uuid-disabled" class="sr-only">Description physique</label>
+          <select id="description-physique-uuid-disabled" name="system.descriptionPhysiqueUuid" disabled>
+            <option value="">— Aucun —</option>
+          </select>
+        {{/if}}
+      {{else}}
+        <span class="readonly-field">{{selectedDescriptionPhysiqueName}}</span>
+      {{/if}}
+    </div>
+
+    <div class="form-group">
+      <label for="age-uuid-enabled">Âge</label>
+      {{#if canEdit}}
+        {{#if system.homeworldUuid}}
+          <select id="age-uuid-enabled" name="system.ageUuid">
+            <option value="">— Aucun —</option>
+            {{#each ageChoices as |a|}}
+              {{#if a.selected}}
+                <option value="{{a.uuid}}" selected>{{a.name}}{{#if a.source}} ({{a.source}}){{/if}}</option>
+              {{else}}
+                <option value="{{a.uuid}}">{{a.name}}{{#if a.source}} ({{a.source}}){{/if}}</option>
+              {{/if}}
+            {{/each}}
+          </select>
+        {{else}}
+          <label for="age-uuid-disabled" class="sr-only">Âge</label>
+          <select id="age-uuid-disabled" name="system.ageUuid" disabled>
+            <option value="">— Aucun —</option>
+          </select>
+        {{/if}}
+      {{else}}
+        <span class="readonly-field">{{selectedAgeName}}</span>
+      {{/if}}
+    </div>
+
+    <div class="form-group">
+      <label for="comportement-uuid-enabled">Comportement</label>
+      {{#if canEdit}}
+        {{#if system.homeworldUuid}}
+          <select id="comportement-uuid-enabled" name="system.comportementUuid">
+            <option value="">— Aucun —</option>
+            {{#each comportementChoices as |c|}}
+              {{#if c.selected}}
+                <option value="{{c.uuid}}" selected>{{c.name}}{{#if c.source}} ({{c.source}}){{/if}}</option>
+              {{else}}
+                <option value="{{c.uuid}}">{{c.name}}{{#if c.source}} ({{c.source}}){{/if}}</option>
+              {{/if}}
+            {{/each}}
+          </select>
+        {{else}}
+          <label for="comportement-uuid-disabled" class="sr-only">Comportement</label>
+          <select id="comportement-uuid-disabled" name="system.comportementUuid" disabled>
+            <option value="">— Aucun —</option>
+          </select>
+        {{/if}}
+      {{else}}
+        <span class="readonly-field">{{selectedComportementName}}</span>
+      {{/if}}
+    </div>
+
+    <div class="form-group">
+      <label for="particularite-uuid-enabled">Particularité physique</label>
+      {{#if canEdit}}
+        {{#if system.homeworldUuid}}
+          <select id="particularite-uuid-enabled" name="system.particularitePhysiqueUuid">
+            <option value="">— Aucun —</option>
+            {{#each particularitePhysiqueChoices as |p|}}
+              {{#if p.selected}}
+                <option value="{{p.uuid}}" selected>{{p.name}}{{#if p.source}} ({{p.source}}){{/if}}</option>
+              {{else}}
+                <option value="{{p.uuid}}">{{p.name}}{{#if p.source}} ({{p.source}}){{/if}}</option>
+              {{/if}}
+            {{/each}}
+          </select>
+        {{else}}
+          <label for="particularite-uuid-disabled" class="sr-only">Particularité physique</label>
+          <select id="particularite-uuid-disabled" name="system.particularitePhysiqueUuid" disabled>
+            <option value="">— Aucun —</option>
+          </select>
+        {{/if}}
+      {{else}}
+        <span class="readonly-field">{{selectedParticularitePhysiqueName}}</span>
+      {{/if}}
+    </div>
+
+    <div class="form-group">
+      <label for="carriere-uuid-enabled">Carrière</label>
+      {{#if canEdit}}
+        {{#if system.homeworldUuid}}
+          <select id="carriere-uuid-enabled" name="system.carriereUuid">
+            <option value="">— Aucun —</option>
+            {{#each carriereChoices as |c|}}
+              {{#if c.selected}}
+                <option value="{{c.uuid}}" selected>{{c.name}}{{#if c.source}} ({{c.source}}){{/if}}</option>
+              {{else}}
+                <option value="{{c.uuid}}">{{c.name}}{{#if c.source}} ({{c.source}}){{/if}}</option>
+              {{/if}}
+            {{/each}}
+          </select>
+        {{else}}
+          <label for="carriere-uuid-disabled" class="sr-only">Carrière</label>
+          <select id="carriere-uuid-disabled" name="system.carriereUuid" disabled>
+            <option value="">— Aucun —</option>
+          </select>
+        {{/if}}
+      {{else}}
+        <span class="readonly-field">{{selectedCarriereName}}</span>
+      {{/if}}
+    </div>
+
+    <div class="form-group">
+      <label for="effet-assermentation-uuid-enabled">Effet d’assermentation</label>
+      {{#if canEdit}}
+        {{#if system.homeworldUuid}}
+          <select id="effet-assermentation-uuid-enabled" name="system.effetAssermentationUuid">
+            <option value="">— Aucun —</option>
+            {{#each effetAssermentationChoices as |e|}}
+              {{#if e.selected}}
+                <option value="{{e.uuid}}" selected>{{e.name}}{{#if e.source}} ({{e.source}}){{/if}}</option>
+              {{else}}
+                <option value="{{e.uuid}}">{{e.name}}{{#if e.source}} ({{e.source}}){{/if}}</option>
+              {{/if}}
+            {{/each}}
+          </select>
+        {{else}}
+          <label for="effet-assermentation-uuid-disabled" class="sr-only">Effet d’assermentation</label>
+          <select id="effet-assermentation-uuid-disabled" name="system.effetAssermentationUuid" disabled>
+            <option value="">— Aucun —</option>
+          </select>
+        {{/if}}
+      {{else}}
+        <span class="readonly-field">{{selectedEffetAssermentationName}}</span>
       {{/if}}
     </div>
   </section>

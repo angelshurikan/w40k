@@ -65,6 +65,27 @@
       },
       "hair": {
         "htmlFields": []
+      },
+      "planeteNatal": {
+        "htmlFields": []
+      },
+      "descriptionPhysique": {
+        "htmlFields": []
+      },
+      "age": {
+        "htmlFields": []
+      },
+      "comportement": {
+        "htmlFields": []
+      },
+      "particularitePhysique": {
+        "htmlFields": []
+      },
+      "carriere": {
+        "htmlFields": []
+      },
+      "effetAssermentation": {
+        "htmlFields": []
       }
     }
   },

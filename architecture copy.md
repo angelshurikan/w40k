@@ -67,18 +67,6 @@ classDiagram
       int ID
       string Title
     }
-    class Peau {
-      int ID
-      string Title
-    }
-    class Cheveux {
-      int ID
-      string Title
-    }
-    class Yeux {
-      int ID
-      string Title
-    }
     class Comportement {
       int ID
       string Title
@@ -103,16 +91,6 @@ classDiagram
       int ID
       string Title
     }
-    class Term {
-      int ID
-      string Name
-      string Slug
-      string Type (Age,)
-      ----
-      string Entity Cac
-      string Label Endurance
-      int Number      +5
-    }
 
 
 
@@ -123,9 +101,6 @@ classDiagram
     Personnage <|-- PlaneteNatal
     Personnage <|-- DescriptionPhysique
     Personnage <|-- Age
-    Personnage <|-- Peau
-    Personnage <|-- Cheveux
-    Personnage <|-- Yeux
     Personnage <|-- Comportement
     Personnage <|-- ParticularitePhysique
     Personnage <|-- Carriere
@@ -136,9 +111,6 @@ classDiagram
     MondeNatal --|> PlaneteNatal
     MondeNatal --|> DescriptionPhysique
     MondeNatal --|> Age
-    MondeNatal --|> Peau
-    MondeNatal --|> Cheveux
-    MondeNatal --|> Yeux
     MondeNatal --|> ParticularitePhysique
     MondeNatal --|> Carriere
 

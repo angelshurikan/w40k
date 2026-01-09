@@ -214,15 +214,15 @@ Hooks.once("init", () => {
     makeDefault: true
   });
 
-  const createHomeworldLinkedItemSheetClass = (type, templatePath) => {
+  const createHomeworldLinkedItemSheetClass = (type, templatePath, { withDescription = false } = {}) => {
     return class HomeworldLinkedItemSheet extends ItemSheet {
       static get defaultOptions() {
         return mergeObject(super.defaultOptions, {
           classes: ["forkW40k", "sheet", "item", type],
           template: templatePath,
-          width: 520,
-          height: 260,
-          resizable: false
+          width: withDescription ? 560 : 520,
+          height: withDescription ? 520 : 260,
+          resizable: true
         });
       }
 
@@ -230,6 +230,7 @@ Hooks.once("init", () => {
         const context = await super.getData(options);
         context.system = this.item.system || {};
         context.system.homeworldUuid = context.system.homeworldUuid ?? "";
+        if (withDescription) context.system.description = context.system.description ?? "";
 
         // Compendium only (préférence)
         const homeworlds = await collectItemsOfType("mondeNatal", { preferCompendium: true });
@@ -242,29 +243,57 @@ Hooks.once("init", () => {
         if (formData["system.homeworldUuid"] !== undefined && formData["system.homeworldUuid"] !== null) {
           formData["system.homeworldUuid"] = String(formData["system.homeworldUuid"]).trim();
         }
+        if (withDescription && formData["system.description"] !== undefined && formData["system.description"] !== null) {
+          formData["system.description"] = String(formData["system.description"]);
+        }
         await this.object.update(formData);
       }
     };
   };
 
-  // --- ItemSheets : Eye/Skin/Hair via factory ---
-  const EyeItemSheet = createHomeworldLinkedItemSheetClass(
-    "eye",
-    `systems/${SYSTEM_ID}/templates/item/eye-sheet.html`
+  // Nouveaux types (compendium-only dans les listes)
+  const PlaneteNatalItemSheet = createHomeworldLinkedItemSheetClass(
+    "planeteNatal",
+    `systems/${SYSTEM_ID}/templates/item/planete-natal-sheet.html`,
+    { withDescription: true }
   );
-  Items.registerSheet(SYSTEM_ID, EyeItemSheet, { types: ["eye"], makeDefault: true });
+  Items.registerSheet(SYSTEM_ID, PlaneteNatalItemSheet, { types: ["planeteNatal"], makeDefault: true });
 
-  const SkinItemSheet = createHomeworldLinkedItemSheetClass(
-    "skin",
-    `systems/${SYSTEM_ID}/templates/item/skin-sheet.html`
+  const DescriptionPhysiqueItemSheet = createHomeworldLinkedItemSheetClass(
+    "descriptionPhysique",
+    `systems/${SYSTEM_ID}/templates/item/description-physique-sheet.html`
   );
-  Items.registerSheet(SYSTEM_ID, SkinItemSheet, { types: ["skin"], makeDefault: true });
+  Items.registerSheet(SYSTEM_ID, DescriptionPhysiqueItemSheet, { types: ["descriptionPhysique"], makeDefault: true });
 
-  const HairItemSheet = createHomeworldLinkedItemSheetClass(
-    "hair",
-    `systems/${SYSTEM_ID}/templates/item/hair-sheet.html`
+  const AgeItemSheet = createHomeworldLinkedItemSheetClass(
+    "age",
+    `systems/${SYSTEM_ID}/templates/item/age-sheet.html`
   );
-  Items.registerSheet(SYSTEM_ID, HairItemSheet, { types: ["hair"], makeDefault: true });
+  Items.registerSheet(SYSTEM_ID, AgeItemSheet, { types: ["age"], makeDefault: true });
+
+  const ComportementItemSheet = createHomeworldLinkedItemSheetClass(
+    "comportement",
+    `systems/${SYSTEM_ID}/templates/item/comportement-sheet.html`
+  );
+  Items.registerSheet(SYSTEM_ID, ComportementItemSheet, { types: ["comportement"], makeDefault: true });
+
+  const ParticularitePhysiqueItemSheet = createHomeworldLinkedItemSheetClass(
+    "particularitePhysique",
+    `systems/${SYSTEM_ID}/templates/item/particularite-physique-sheet.html`
+  );
+  Items.registerSheet(SYSTEM_ID, ParticularitePhysiqueItemSheet, { types: ["particularitePhysique"], makeDefault: true });
+
+  const CarriereItemSheet = createHomeworldLinkedItemSheetClass(
+    "carriere",
+    `systems/${SYSTEM_ID}/templates/item/carriere-sheet.html`
+  );
+  Items.registerSheet(SYSTEM_ID, CarriereItemSheet, { types: ["carriere"], makeDefault: true });
+
+  const EffetAssermentationItemSheet = createHomeworldLinkedItemSheetClass(
+    "effetAssermentation",
+    `systems/${SYSTEM_ID}/templates/item/effet-assermentation-sheet.html`
+  );
+  Items.registerSheet(SYSTEM_ID, EffetAssermentationItemSheet, { types: ["effetAssermentation"], makeDefault: true });
 
   // Register a minimal player actor sheet for this system.
   /**
@@ -315,11 +344,11 @@ Hooks.once("init", () => {
       const skins = await collectItemsOfType("skin", { includeHomeworld: true, preferCompendium: true });
       const hairs = await collectItemsOfType("hair", { includeHomeworld: true, preferCompendium: true });
 
-      const filterByHomeworld = (arr) => selectedHW ? arr.filter(x => x.homeworldUuid === selectedHW) : [];
+      const filterBySelectedHomeworld = (arr) => selectedHW ? arr.filter(x => x.homeworldUuid === selectedHW) : [];
 
-      const filteredEyes = filterByHomeworld(eyes);
-      const filteredSkins = filterByHomeworld(skins);
-      const filteredHairs = filterByHomeworld(hairs);
+      const filteredEyes = filterBySelectedHomeworld(eyes);
+      const filteredSkins = filterBySelectedHomeworld(skins);
+      const filteredHairs = filterBySelectedHomeworld(hairs);
 
       const eyeChoices = buildSelectedChoices(filteredEyes, selectedEye);
       const skinChoices = buildSelectedChoices(filteredSkins, selectedSkin);
@@ -332,6 +361,50 @@ Hooks.once("init", () => {
       context.selectedEyeName = (filteredEyes.find(e => e.uuid === selectedEye)?.name) ?? "";
       context.selectedSkinName = (filteredSkins.find(s => s.uuid === selectedSkin)?.name) ?? "";
       context.selectedHairName = (filteredHairs.find(h => h.uuid === selectedHair)?.name) ?? "";
+
+      // --- Nouveaux types (compendium-only dans les listes) ---
+      // Assurer les champs Actor AVANT usage (une seule fois)
+      context.system.planeteNatalUuid = context.system.planeteNatalUuid ?? "";
+      context.system.descriptionPhysiqueUuid = context.system.descriptionPhysiqueUuid ?? "";
+      context.system.ageUuid = context.system.ageUuid ?? "";
+      context.system.comportementUuid = context.system.comportementUuid ?? "";
+      context.system.particularitePhysiqueUuid = context.system.particularitePhysiqueUuid ?? "";
+      context.system.carriereUuid = context.system.carriereUuid ?? "";
+      context.system.effetAssermentationUuid = context.system.effetAssermentationUuid ?? "";
+
+      const planeteNatals = await collectItemsOfType("planeteNatal", { includeHomeworld: true, preferCompendium: true });
+      const descriptionPhysiques = await collectItemsOfType("descriptionPhysique", { includeHomeworld: true, preferCompendium: true });
+      const ages = await collectItemsOfType("age", { includeHomeworld: true, preferCompendium: true });
+      const comportements = await collectItemsOfType("comportement", { includeHomeworld: true, preferCompendium: true });
+      const particularites = await collectItemsOfType("particularitePhysique", { includeHomeworld: true, preferCompendium: true });
+      const carrieres = await collectItemsOfType("carriere", { includeHomeworld: true, preferCompendium: true });
+      const effetsAssermentation = await collectItemsOfType("effetAssermentation", { includeHomeworld: true, preferCompendium: true });
+
+      // Réutiliser le filterByHomeworld déjà défini plus haut
+      const filteredPlaneteNatals = filterBySelectedHomeworld(planeteNatals);
+      const filteredDescriptionPhysiques = filterBySelectedHomeworld(descriptionPhysiques);
+      const filteredAges = filterBySelectedHomeworld(ages);
+      const filteredComportements = filterBySelectedHomeworld(comportements);
+      const filteredParticularites = filterBySelectedHomeworld(particularites);
+      const filteredCarrieres = filterBySelectedHomeworld(carrieres);
+      const filteredEffetsAssermentation = filterBySelectedHomeworld(effetsAssermentation);
+
+
+      context.planeteNatalChoices = buildSelectedChoices(filteredPlaneteNatals, context.system.planeteNatalUuid);
+      context.descriptionPhysiqueChoices = buildSelectedChoices(filteredDescriptionPhysiques, context.system.descriptionPhysiqueUuid);
+      context.ageChoices = buildSelectedChoices(filteredAges, context.system.ageUuid);
+      context.comportementChoices = buildSelectedChoices(filteredComportements, context.system.comportementUuid);
+      context.particularitePhysiqueChoices = buildSelectedChoices(filteredParticularites, context.system.particularitePhysiqueUuid);
+      context.carriereChoices = buildSelectedChoices(filteredCarrieres, context.system.carriereUuid);
+      context.effetAssermentationChoices = buildSelectedChoices(filteredEffetsAssermentation, context.system.effetAssermentationUuid);
+
+      context.selectedPlaneteNatalName = (filteredPlaneteNatals.find(x => x.uuid === context.system.planeteNatalUuid)?.name) ?? "";
+      context.selectedDescriptionPhysiqueName = (filteredDescriptionPhysiques.find(x => x.uuid === context.system.descriptionPhysiqueUuid)?.name) ?? "";
+      context.selectedAgeName = (filteredAges.find(x => x.uuid === context.system.ageUuid)?.name) ?? "";
+      context.selectedComportementName = (filteredComportements.find(x => x.uuid === context.system.comportementUuid)?.name) ?? "";
+      context.selectedParticularitePhysiqueName = (filteredParticularites.find(x => x.uuid === context.system.particularitePhysiqueUuid)?.name) ?? "";
+      context.selectedCarriereName = (filteredCarrieres.find(x => x.uuid === context.system.carriereUuid)?.name) ?? "";
+      context.selectedEffetAssermentationName = (filteredEffetsAssermentation.find(x => x.uuid === context.system.effetAssermentationUuid)?.name) ?? "";
 
       return context;
     }
@@ -395,6 +468,13 @@ Hooks.once("init", () => {
           formData["system.eyeUuid"] = "";
           formData["system.skinUuid"] = "";
           formData["system.hairUuid"] = "";
+          formData["system.planeteNatalUuid"] = "";
+          formData["system.descriptionPhysiqueUuid"] = "";
+          formData["system.ageUuid"] = "";
+          formData["system.comportementUuid"] = "";
+          formData["system.particularitePhysiqueUuid"] = "";
+          formData["system.carriereUuid"] = "";
+          formData["system.effetAssermentationUuid"] = "";
         }
       }
 
@@ -406,6 +486,20 @@ Hooks.once("init", () => {
       }
       if (formData["system.hairUuid"] !== undefined && formData["system.hairUuid"] !== null) {
         formData["system.hairUuid"] = String(formData["system.hairUuid"]).trim();
+      }
+
+      // trim des nouveaux champs
+      const trimKeys = [
+        "system.planeteNatalUuid",
+        "system.descriptionPhysiqueUuid",
+        "system.ageUuid",
+        "system.comportementUuid",
+        "system.particularitePhysiqueUuid",
+        "system.carriereUuid",
+        "system.effetAssermentationUuid"
+      ];
+      for (const k of trimKeys) {
+        if (formData[k] !== undefined && formData[k] !== null) formData[k] = String(formData[k]).trim();
       }
 
       await this.object.update(formData);
@@ -432,6 +526,14 @@ Hooks.on("preCreateActor", (actor, createData, options, userId) => {
   if (createData.system.eyeUuid === undefined) createData.system.eyeUuid = "";
   if (createData.system.skinUuid === undefined) createData.system.skinUuid = "";
   if (createData.system.hairUuid === undefined) createData.system.hairUuid = "";
+
+  if (createData.system.planeteNatalUuid === undefined) createData.system.planeteNatalUuid = "";
+  if (createData.system.descriptionPhysiqueUuid === undefined) createData.system.descriptionPhysiqueUuid = "";
+  if (createData.system.ageUuid === undefined) createData.system.ageUuid = "";
+  if (createData.system.comportementUuid === undefined) createData.system.comportementUuid = "";
+  if (createData.system.particularitePhysiqueUuid === undefined) createData.system.particularitePhysiqueUuid = "";
+  if (createData.system.carriereUuid === undefined) createData.system.carriereUuid = "";
+  if (createData.system.effetAssermentationUuid === undefined) createData.system.effetAssermentationUuid = "";
 
   const attrs = createData.system.attributes;
   for (const k of Object.keys(attrs)) {
