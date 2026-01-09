@@ -37,6 +37,52 @@
         {{/if}}
       </div>
     </div>
+
+    <hr />
+
+    <div class="form-group">
+      <label for="homeworld-uuid">Monde natal</label>
+      {{#if canEdit}}
+        <select id="homeworld-uuid" name="system.homeworldUuid">
+          <option value="">— Aucun —</option>
+          {{#each homeworldChoices as |m|}}
+            {{#if m.selected}}
+              <option value="{{m.uuid}}" selected>{{m.name}}{{#if m.source}} ({{m.source}}){{/if}}</option>
+            {{else}}
+              <option value="{{m.uuid}}">{{m.name}}{{#if m.source}} ({{m.source}}){{/if}}</option>
+            {{/if}}
+          {{/each}}
+        </select>
+      {{else}}
+        <span class="readonly-field">{{selectedHomeworldName}}</span>
+      {{/if}}
+    </div>
+
+    <div class="form-group">
+      <label for="eye-uuid-enabled">Eye</label>
+      {{#if canEdit}}
+        {{#if system.homeworldUuid}}
+          <select id="eye-uuid-enabled" name="system.eyeUuid">
+            <option value="">— Aucun —</option>
+            {{#each eyeChoices as |e|}}
+              {{#if e.selected}}
+                <option value="{{e.uuid}}" selected>{{e.name}}{{#if e.source}} ({{e.source}}){{/if}}</option>
+              {{else}}
+                <option value="{{e.uuid}}">{{e.name}}{{#if e.source}} ({{e.source}}){{/if}}</option>
+              {{/if}}
+            {{/each}}
+          </select>
+        {{else}}
+          <label for="eye-uuid-disabled" class="sr-only">Eye</label>
+          <select id="eye-uuid-disabled" name="system.eyeUuid" disabled>
+            <option value="">— Aucun —</option>
+          </select>
+          <p class="notes">Choisis d’abord un Monde natal pour filtrer la liste des Eyes.</p>
+        {{/if}}
+      {{else}}
+        <span class="readonly-field">{{selectedEyeName}}</span>
+      {{/if}}
+    </div>
   </section>
 
   <footer class="sheet-footer">

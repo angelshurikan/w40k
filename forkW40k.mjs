@@ -89,6 +89,95 @@ Hooks.once("init", () => {
   console.log(`${SYSTEM_ID} v${SYSTEM_VERSION} initialisation (compatibilité Foundry >= ${COMPAT_MINIMUM})`);
 
   /**
+   * EyeItemSheet
+   * - Feuille minimale pour le type `eye` (titre uniquement)
+   */
+  class EyeItemSheet extends ItemSheet {
+    static get defaultOptions() {
+      return mergeObject(super.defaultOptions, {
+        classes: ["forkW40k", "sheet", "item", "eye"],
+        template: `systems/${SYSTEM_ID}/templates/item/eye-sheet.html`,
+        width: 520,
+        height: 260,
+        resizable: false
+      });
+    }
+
+    async getData(options) {
+      const context = await super.getData(options);
+
+      context.system = this.item.system || {};
+      context.system.homeworldUuid = context.system.homeworldUuid ?? "";
+
+      // Construire une liste de Mondes natals (World items + compendiums Item)
+      const homeworlds = [];
+
+      // Mondes natals du monde
+      try {
+        if (typeof game !== "undefined" && game.items) {
+          for (const it of game.items) {
+            if (it?.type === "mondeNatal") {
+              homeworlds.push({ uuid: it.uuid, name: it.name, source: "World" });
+            }
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+
+      // Mondes natals des compendiums (index)
+      try {
+        if (typeof game !== "undefined" && game.packs) {
+          for (const pack of game.packs) {
+            if (pack?.documentName !== "Item") continue;
+            const index = await pack.getIndex({ fields: ["type", "name"] });
+            for (const entry of index) {
+              if (entry.type === "mondeNatal") {
+                homeworlds.push({
+                  uuid: `Compendium.${pack.collection}.${entry._id}`,
+                  name: entry.name,
+                  source: pack.metadata?.label ?? pack.collection
+                });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+
+      // Dédupliquer par uuid
+      const seen = new Set();
+      const choices = homeworlds.filter(m => {
+        if (!m?.uuid) return false;
+        if (seen.has(m.uuid)) return false;
+        seen.add(m.uuid);
+        return true;
+      });
+
+      const selectedUuid = context.system.homeworldUuid;
+      context.homeworldChoices = choices.map(m => ({
+        ...m,
+        selectedAttr: (selectedUuid && m.uuid === selectedUuid) ? "selected" : ""
+      }));
+
+      return context;
+    }
+
+    async _updateObject(event, formData) {
+      if (formData["system.homeworldUuid"] !== undefined && formData["system.homeworldUuid"] !== null) {
+        formData["system.homeworldUuid"] = String(formData["system.homeworldUuid"]).trim();
+      }
+      await this.object.update(formData);
+    }
+  }
+
+  Items.registerSheet(SYSTEM_ID, EyeItemSheet, {
+    types: ["eye"],
+    makeDefault: true
+  });
+
+  /**
    * MondeNatalItemSheet
    * - Feuille d'Item dédiée au type `mondeNatal`
    * - Édite la description (system.description) + les caractéristiques par défaut (system.stats.*)
@@ -105,13 +194,13 @@ Hooks.once("init", () => {
       });
     }
 
-    getData(options) {
-      const context = super.getData(options);
+    async getData(options) {
+      const context = await super.getData(options);
 
       // Alias pratique pour le template
       context.system = this.item.system || {};
 
-      // Valeurs par défaut non persistées (évite les undefined dans l'UI)
+      // Valeurs par défaut non persistées
       context.system.description = context.system.description ?? "";
       context.system.stats = context.system.stats ?? {};
 
@@ -137,6 +226,8 @@ Hooks.once("init", () => {
         formData["system.description"] = String(formData["system.description"]);
       }
 
+      // La relation Eye->MondeNatal est gérée sur l'Item Eye (system.homeworldUuid)
+
       await this.object.update(formData);
     }
   }
@@ -159,165 +250,226 @@ Hooks.once("init", () => {
       return mergeObject(super.defaultOptions, {
         classes: ["forkW40k", "sheet", "actor"],
         template: `systems/${SYSTEM_ID}/templates/actor/player-sheet.html`,
-        width: 480,
-        height: 320,
-        resizable: false
+        width: 520,
+        height: 520,
+        resizable: true
       });
     }
 
-    /**
-     * Récupère les données pour le template. Nous fournissons `system` comme alias de actor.system
-     * pour faciliter l'accès dans Handlebars. On expose également `canEdit` (seuls les MJ peuvent éditer).
-     */
-    getData(options) {
-      const context = super.getData(options);
-      // Exposer l'objet system (structures de données du système) sous `system`
+    async getData(options) {
+      const context = await super.getData(options);
+
       context.system = this.actor.system || {};
-      // Garantir des valeurs d'affichage par défaut sans les persister
       context.system.attributes = context.system.attributes || {};
       context.system.attributes.hp = context.system.attributes.hp || { value: 10, max: 10 };
       context.system.attributes.mana = context.system.attributes.mana || { value: 5, max: 5 };
 
-      // Déterminer si l'utilisateur courant peut éditer (ici : seulement les GMs)
-      context.canEdit = !!(typeof game !== "undefined" && game.user && game.user.isGM);
-      // stocker localement pour accès dans les méthodes
-      this.canEdit = context.canEdit;
+      // Liens Personnage -> Monde natal / Eye
+      context.system.homeworldUuid = context.system.homeworldUuid ?? "";
+      context.system.eyeUuid = context.system.eyeUuid ?? "";
 
-      // Attribut HTML prêt à injecter dans les inputs (soit '', soit 'disabled')
-      context.canEditAttr = context.canEdit ? '' : 'disabled';
+      context.canEdit = !!(typeof game !== "undefined" && game.user && game.user.isGM);
+      this.canEdit = context.canEdit;
+      context.canEditAttr = context.canEdit ? "" : "disabled";
+
+      const selectedHW = context.system.homeworldUuid;
+      const selectedEye = context.system.eyeUuid;
+
+      // --- MONDES NATALS (World + Compendiums) ---
+      const homeworlds = [];
+
+      try {
+        if (typeof game !== "undefined" && game.items) {
+          for (const it of game.items) {
+            if (it?.type === "mondeNatal") {
+              homeworlds.push({ uuid: it.uuid, name: it.name, source: "World" });
+            }
+          }
+        }
+      } catch (_) {}
+
+      try {
+        if (typeof game !== "undefined" && game.packs) {
+          for (const pack of game.packs) {
+            if (pack?.documentName !== "Item") continue;
+            const index = await pack.getIndex({ fields: ["type", "name"] });
+            for (const entry of index) {
+              if (entry.type === "mondeNatal") {
+                homeworlds.push({
+                  uuid: `Compendium.${pack.collection}.${entry._id}`,
+                  name: entry.name,
+                  source: pack.metadata?.label ?? pack.collection
+                });
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      const seenHW = new Set();
+      const hwChoices = homeworlds.filter(m => {
+        if (!m?.uuid) return false;
+        if (seenHW.has(m.uuid)) return false;
+        seenHW.add(m.uuid);
+        return true;
+      });
+
+      context.homeworldChoices = hwChoices.map(m => ({
+        ...m,
+        selected: !!(selectedHW && m.uuid === selectedHW)
+      }));
+      context.selectedHomeworldName = (hwChoices.find(m => m.uuid === selectedHW)?.name) ?? "";
+
+      // --- EYES (World + Compendiums) filtrés par Monde natal ---
+      const eyes = [];
+
+      // World eyes: on peut lire it.system.homeworldUuid directement
+      try {
+        if (typeof game !== "undefined" && game.items) {
+          for (const it of game.items) {
+            if (it?.type === "eye") {
+              eyes.push({
+                uuid: it.uuid,
+                name: it.name,
+                source: "World",
+                homeworldUuid: it.system?.homeworldUuid ?? ""
+              });
+            }
+          }
+        }
+      } catch (_) {}
+
+      // Compendium eyes: via index incluant system.homeworldUuid
+      try {
+        if (typeof game !== "undefined" && game.packs) {
+          for (const pack of game.packs) {
+            if (pack?.documentName !== "Item") continue;
+            const index = await pack.getIndex({ fields: ["type", "name", "system.homeworldUuid"] });
+            for (const entry of index) {
+              if (entry.type === "eye") {
+                eyes.push({
+                  uuid: `Compendium.${pack.collection}.${entry._id}`,
+                  name: entry.name,
+                  source: pack.metadata?.label ?? pack.collection,
+                  homeworldUuid: entry.system?.homeworldUuid ?? ""
+                });
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      const filteredEyes = selectedHW ? eyes.filter(e => e.homeworldUuid === selectedHW) : [];
+
+      const seenEye = new Set();
+      const eyeChoices = filteredEyes.filter(e => {
+        if (!e?.uuid) return false;
+        if (seenEye.has(e.uuid)) return false;
+        seenEye.add(e.uuid);
+        return true;
+      });
+
+      context.eyeChoices = eyeChoices.map(e => ({
+        ...e,
+        selected: !!(selectedEye && e.uuid === selectedEye)
+      }));
+      context.selectedEyeName = (eyeChoices.find(e => e.uuid === selectedEye)?.name) ?? "";
 
       return context;
     }
 
-    /**
-     * Activer les listeners (ex. boutons). Ici on empêche la soumission si l'utilisateur n'est pas autorisé.
-     */
-    activateListeners(html) {
-      super.activateListeners(html);
-      // Empêcher champs numériques vides
-      html.find('input[type="number"]').on('change', ev => {
-        const input = ev.currentTarget;
-        if (input.value === "") input.value = 0;
-      });
-
-      // Bloquer la soumission pour les utilisateurs non autorisés
-      html.find('form').on('submit', ev => {
-        if (!this.canEdit) {
-          ev.preventDefault();
-          ui.notifications?.warn("Vous n'êtes pas autorisé à modifier cette fiche.");
-          return false;
-        }
-      });
-    }
-
-    /**
-     * Soumet le formulaire et met à jour l'acteur. La validation/clamping n'est appliquée que
-     * si l'utilisateur a le droit d'éditer (MJ).
-     */
     async _updateObject(event, formData) {
       if (!this.canEdit) {
-        // Sécurité côté client : ne pas tenter la mise à jour
         ui.notifications?.warn("Modification interdite : seuls les MJ peuvent modifier les données du personnage.");
         return;
       }
 
-      // Sanitize and clamp numeric fields for hp and mana
+      // --- Clamp HP/Mana ---
       const hpValueKey = "system.attributes.hp.value";
       const hpMaxKey = "system.attributes.hp.max";
       const manaValueKey = "system.attributes.mana.value";
       const manaMaxKey = "system.attributes.mana.max";
 
-      // Helper to parse integers safely
       const parseSafeInt = (v, fallback) => {
         const n = Number(v);
         return Number.isFinite(n) ? Math.trunc(n) : fallback;
       };
 
-      // Determine current actor values to use as fallback when max not provided in the form
       const actorHpMax = this.actor?.system?.attributes?.hp?.max ?? 10;
       const actorManaMax = this.actor?.system?.attributes?.mana?.max ?? 5;
 
-      // Normalize hp.max
       if (formData[hpMaxKey] !== undefined) {
         let max = parseSafeInt(formData[hpMaxKey], actorHpMax);
-        if (max < 1) max = 1; // hp max must be at least 1
+        if (max < 1) max = 1;
         formData[hpMaxKey] = max;
       }
 
-      // Normalize hp.value
       if (formData[hpValueKey] !== undefined) {
         const raw = parseSafeInt(formData[hpValueKey], 0);
         const max = formData[hpMaxKey] !== undefined ? formData[hpMaxKey] : actorHpMax;
         formData[hpValueKey] = Math.max(0, Math.min(raw, max));
       }
 
-      // Normalize mana.max
       if (formData[manaMaxKey] !== undefined) {
         let max = parseSafeInt(formData[manaMaxKey], actorManaMax);
         if (max < 0) max = 0;
         formData[manaMaxKey] = max;
       }
 
-      // Normalize mana.value
       if (formData[manaValueKey] !== undefined) {
         const raw = parseSafeInt(formData[manaValueKey], 0);
         const max = formData[manaMaxKey] !== undefined ? formData[manaMaxKey] : actorManaMax;
         formData[manaValueKey] = Math.max(0, Math.min(raw, max));
       }
 
-      // Enfin, mettre à jour l'acteur avec le formData assainie
+      // --- Normalisation & logique Monde natal / Eye ---
+      const prevHomeworld = this.actor?.system?.homeworldUuid ?? "";
+
+      const newHomeworld = (formData["system.homeworldUuid"] !== undefined && formData["system.homeworldUuid"] !== null)
+        ? String(formData["system.homeworldUuid"]).trim()
+        : undefined;
+
+      if (newHomeworld !== undefined) {
+        formData["system.homeworldUuid"] = newHomeworld;
+
+        // Reset automatique de l'Eye si le monde natal change
+        if (newHomeworld !== prevHomeworld) {
+          formData["system.eyeUuid"] = "";
+        }
+      }
+
+      if (formData["system.eyeUuid"] !== undefined && formData["system.eyeUuid"] !== null) {
+        formData["system.eyeUuid"] = String(formData["system.eyeUuid"]).trim();
+      }
+
       await this.object.update(formData);
     }
   }
 
-  // Désenregistrer la fiche core si présente pour éviter conflits, puis enregistrer la fiche du système
+  // Désenregistrer la fiche core si présente, puis enregistrer la fiche du système
   try {
     Actors.unregisterSheet("core", ActorSheet);
   } catch (err) {
-    // Certaines versions de Foundry peuvent lancer si l'enregistrement n'existe pas — ignorer
+    // ignorer
   }
   Actors.registerSheet(SYSTEM_ID, PlayerActorSheet, { makeDefault: true });
-
-  // Initialiser automatiquement les attributs de base lors de la création d'un nouvel acteur
-  Hooks.on("preCreateActor", (actor, createData, options, userId) => {
-    // S'assurer que la structure system.attributes existe
-    createData.system = createData.system || {};
-    createData.system.attributes = createData.system.attributes || {};
-    const attrs = createData.system.attributes;
-
-    // Valeurs par défaut
-    if (!attrs.hp) {
-      attrs.hp = { value: 10, max: 10 };
-    } else {
-      attrs.hp.value = (attrs.hp.value !== undefined) ? Number(attrs.hp.value) : 10;
-      attrs.hp.max = (attrs.hp.max !== undefined) ? Math.max(1, Number(attrs.hp.max)) : 10;
-    }
-
-    if (!attrs.mana) {
-      attrs.mana = { value: 5, max: 5 };
-    } else {
-      attrs.mana.value = (attrs.mana.value !== undefined) ? Number(attrs.mana.value) : 5;
-      attrs.mana.max = (attrs.mana.max !== undefined) ? Math.max(0, Number(attrs.mana.max)) : 5;
-    }
-  });
-
-  // Bloquer côté serveur / hooks pré-update : empêcher les utilisateurs non-GM de modifier les champs système / nom
-  Hooks.on("preUpdateActor", (actor, update, options, userId) => {
-    try {
-      const user = typeof game !== "undefined" ? game.users.get(userId) : null;
-      if (user && user.isGM) return; // autorisé pour MJ
-
-      // Autoriser uniquement les mises à jour touches 'token' (par exemple) pour les non-MJ
-      const keys = Object.keys(update || {});
-      const disallowed = ["system", "name"];
-      if (keys.some(k => disallowed.includes(k))) {
-        ui.notifications?.warn("Modification interdite : seuls les MJ peuvent modifier les données du personnage.");
-        return false; // empêche la mise à jour
-      }
-    } catch (err) {
-      // En cas d'erreur, on ne bloque pas la mise à jour pour éviter d'empêcher des opérations légitimes
-      return;
-    }
-  });
-
 });
+
+// Initialiser les nouveaux acteurs avec des valeurs par défaut pour les champs système
+Hooks.on("preCreateActor", (actor, createData, options, userId) => {
+  // S'assurer que la structure system.attributes existe
+  createData.system = createData.system || {};
+  createData.system.attributes = createData.system.attributes || {};
+
+  // Initialiser les liens personnage -> Monde natal / Eye
+  if (createData.system.homeworldUuid === undefined) createData.system.homeworldUuid = "";
+  if (createData.system.eyeUuid === undefined) createData.system.eyeUuid = "";
+
+  const attrs = createData.system.attributes;
+  for (const k of Object.keys(attrs)) {
+    if (attrs[k] === undefined || attrs[k] === null) {
+      attrs[k] = 0;
+    }
+  }
+});
+

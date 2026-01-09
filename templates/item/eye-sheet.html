@@ -1,0 +1,31 @@
+<form class="{{cssClass}}" autocomplete="off">
+  <header class="sheet-header">
+    <h1 class="charname">
+      <label for="item-name" class="sr-only">Nom</label>
+      <input id="item-name" name="name" type="text" value="{{item.name}}" placeholder="Eye" />
+    </h1>
+  </header>
+
+  <section class="sheet-body">
+    <h2>Monde natal (lié)</h2>
+    <div class="form-group">
+      <label for="homeworld-uuid">Sélection</label>
+      <select id="homeworld-uuid" name="system.homeworldUuid">
+        <option value="">— Aucun —</option>
+        {{#each homeworldChoices as |m|}}
+          {{#if m.selectedAttr}}
+            <option value="{{m.uuid}}" selected>
+              {{m.name}} {{#if m.source}}({{m.source}}){{/if}}
+            </option>
+          {{else}}
+            <option value="{{m.uuid}}">
+              {{m.name}} {{#if m.source}}({{m.source}}){{/if}}
+            </option>
+          {{/if}}
+        {{/each}}
+      </select>
+    </div>
+
+    <p class="notes">Cet Item n’a qu’un titre. Il peut être rattaché à un Monde natal.</p>
+  </section>
+</form>

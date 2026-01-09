@@ -3,15 +3,25 @@
 > Correspondance Foundry VTT (v13)
 >
 > - `MondeNatal` est un **Item** de type `mondeNatal`.
+> - `Eye` est un **Item** de type `eye` (titre uniquement).
 > - Champs (implémentation actuelle) :
->   - `item.name` → `title`
->   - `item.system.description` → `description`
->   - `item.system.stats.*` → caractéristiques :
+>   - `MondeNatal.item.name` → `title`
+>   - `MondeNatal.item.system.description` → `description`
+>   - `MondeNatal.item.system.stats.*` → caractéristiques :
 >     `weaponSkill`, `ballisticSkill`, `strength`, `toughness`, `agility`, `intelligence`,
 >     `perception`, `willpower`, `fellowship`, `fate`, `insanity`, `corruption`
->
+>   - `Eye.item.system.homeworldUuid` → référence vers un `MondeNatal` (UUID)
+>   - `Personnage.actor.system.homeworldUuid` → référence vers un `MondeNatal` (UUID)
+>   - `Personnage.actor.system.eyeUuid` → référence vers un `Eye` (UUID)
+
 ```mermaid
 classDiagram
+    class Eye {
+      int id
+      string title
+      string homeworldUuid
+    }
+
     class Personnage {
       int id
       string firstName
@@ -24,19 +34,10 @@ classDiagram
       int manaMax
       int manaCurrent
       ---
-      int weaponSkill
-      int ballisticSkill
-      int strength
-      int toughness
-      int agility
-      int intelligence
-      int perception
-      int willpower
-      int fellowship
-      int fate
-      int insanity
-      int corruption
+      string homeworldUuid
+      string eyeUuid
     }
+
     class MondeNatal {
       int id
       string title
@@ -58,4 +59,11 @@ classDiagram
 
     %% MondeNatal définit les valeurs de base (copiées) des caractéristiques du Personnage
     Personnage <|-- MondeNatal
-````
+
+    %% Eye référence un MondeNatal
+    Eye --> MondeNatal
+
+    %% Personnage référence un MondeNatal et un Eye (filtré par Eye.homeworldUuid)
+    Personnage --> MondeNatal
+    Personnage --> Eye
+```
