@@ -88,100 +88,82 @@ const MONDE_NATAL_NUM_KEYS = Object.freeze([
 Hooks.once("init", () => {
   console.log(`${SYSTEM_ID} v${SYSTEM_VERSION} initialisation (compatibilité Foundry >= ${COMPAT_MINIMUM})`);
 
-  /**
-   * EyeItemSheet
-   * - Feuille minimale pour le type `eye` (titre uniquement)
-   */
-  class EyeItemSheet extends ItemSheet {
-    static get defaultOptions() {
-      return mergeObject(super.defaultOptions, {
-        classes: ["forkW40k", "sheet", "item", "eye"],
-        template: `systems/${SYSTEM_ID}/templates/item/eye-sheet.html`,
-        width: 520,
-        height: 260,
-        resizable: false
-      });
-    }
+  // Helpers internes (factorisation World + Compendiums)
+  const dedupeByUuid = (arr) => {
+    const seen = new Set();
+    return (arr || []).filter(e => {
+      if (!e?.uuid) return false;
+      if (seen.has(e.uuid)) return false;
+      seen.add(e.uuid);
+      return true;
+    });
+  };
 
-    async getData(options) {
-      const context = await super.getData(options);
+  const collectItemsOfType = async (type, { includeHomeworld = false, preferCompendium = false } = {}) => {
+    const out = [];
 
-      context.system = this.item.system || {};
-      context.system.homeworldUuid = context.system.homeworldUuid ?? "";
-
-      // Construire une liste de Mondes natals (World items + compendiums Item)
-      const homeworlds = [];
-
-      // Mondes natals du monde
+    // World (optionnel)
+    if (!preferCompendium) {
       try {
         if (typeof game !== "undefined" && game.items) {
           for (const it of game.items) {
-            if (it?.type === "mondeNatal") {
-              homeworlds.push({ uuid: it.uuid, name: it.name, source: "World" });
+            if (it?.type === type) {
+              out.push({
+                uuid: it.uuid,
+                name: it.name,
+                source: "World",
+                ...(includeHomeworld ? { homeworldUuid: it.system?.homeworldUuid ?? "" } : {})
+              });
             }
           }
         }
-      } catch (err) {
-        // ignore
-      }
+      } catch (_) {}
+    }
 
-      // Mondes natals des compendiums (index)
-      try {
-        if (typeof game !== "undefined" && game.packs) {
-          for (const pack of game.packs) {
-            if (pack?.documentName !== "Item") continue;
-            const index = await pack.getIndex({ fields: ["type", "name"] });
-            for (const entry of index) {
-              if (entry.type === "mondeNatal") {
-                homeworlds.push({
-                  uuid: `Compendium.${pack.collection}.${entry._id}`,
-                  name: entry.name,
-                  source: pack.metadata?.label ?? pack.collection
-                });
-              }
+    // Compendiums (index)
+    try {
+      if (typeof game !== "undefined" && game.packs) {
+        const fields = includeHomeworld ? ["type", "name", "system.homeworldUuid"] : ["type", "name"];
+        for (const pack of game.packs) {
+          if (pack?.documentName !== "Item") continue;
+          const index = await pack.getIndex({ fields });
+          for (const entry of index) {
+            if (entry.type === type) {
+              out.push({
+                uuid: `Compendium.${pack.collection}.${entry._id}`,
+                name: entry.name,
+                source: pack.metadata?.label ?? pack.collection,
+                ...(includeHomeworld ? { homeworldUuid: entry.system?.homeworldUuid ?? "" } : {})
+              });
             }
           }
         }
-      } catch (err) {
-        // ignore
       }
+    } catch (_) {}
 
-      // Dédupliquer par uuid
-      const seen = new Set();
-      const choices = homeworlds.filter(m => {
-        if (!m?.uuid) return false;
-        if (seen.has(m.uuid)) return false;
-        seen.add(m.uuid);
-        return true;
-      });
+    return dedupeByUuid(out);
+  };
 
-      const selectedUuid = context.system.homeworldUuid;
-      context.homeworldChoices = choices.map(m => ({
-        ...m,
-        selectedAttr: (selectedUuid && m.uuid === selectedUuid) ? "selected" : ""
-      }));
+  const buildHomeworldChoices = (homeworlds, selectedUuid) => {
+    const list = dedupeByUuid(homeworlds);
+    return list.map(m => ({
+      ...m,
+      selectedAttr: (selectedUuid && m.uuid === selectedUuid) ? "selected" : ""
+    }));
+  };
 
-      return context;
-    }
-
-    async _updateObject(event, formData) {
-      if (formData["system.homeworldUuid"] !== undefined && formData["system.homeworldUuid"] !== null) {
-        formData["system.homeworldUuid"] = String(formData["system.homeworldUuid"]).trim();
-      }
-      await this.object.update(formData);
-    }
-  }
-
-  Items.registerSheet(SYSTEM_ID, EyeItemSheet, {
-    types: ["eye"],
-    makeDefault: true
-  });
+  const buildSelectedChoices = (items, selectedUuid) => {
+    const list = dedupeByUuid(items);
+    return list.map(e => ({
+      ...e,
+      selected: !!(selectedUuid && e.uuid === selectedUuid)
+    }));
+  };
 
   /**
    * MondeNatalItemSheet
    * - Feuille d'Item dédiée au type `mondeNatal`
    * - Édite la description (system.description) + les caractéristiques par défaut (system.stats.*)
-   * - La copie vers l'Actor sera implémentée plus tard (hors périmètre actuel)
    */
   class MondeNatalItemSheet extends ItemSheet {
     static get defaultOptions() {
@@ -194,13 +176,10 @@ Hooks.once("init", () => {
       });
     }
 
-    async getData(options) {
-      const context = await super.getData(options);
+    getData(options) {
+      const context = super.getData(options);
 
-      // Alias pratique pour le template
       context.system = this.item.system || {};
-
-      // Valeurs par défaut non persistées
       context.system.description = context.system.description ?? "";
       context.system.stats = context.system.stats ?? {};
 
@@ -226,17 +205,66 @@ Hooks.once("init", () => {
         formData["system.description"] = String(formData["system.description"]);
       }
 
-      // La relation Eye->MondeNatal est gérée sur l'Item Eye (system.homeworldUuid)
-
       await this.object.update(formData);
     }
   }
 
-  // Enregistrer la sheet dédiée au type mondeNatal
   Items.registerSheet(SYSTEM_ID, MondeNatalItemSheet, {
     types: ["mondeNatal"],
     makeDefault: true
   });
+
+  const createHomeworldLinkedItemSheetClass = (type, templatePath) => {
+    return class HomeworldLinkedItemSheet extends ItemSheet {
+      static get defaultOptions() {
+        return mergeObject(super.defaultOptions, {
+          classes: ["forkW40k", "sheet", "item", type],
+          template: templatePath,
+          width: 520,
+          height: 260,
+          resizable: false
+        });
+      }
+
+      async getData(options) {
+        const context = await super.getData(options);
+        context.system = this.item.system || {};
+        context.system.homeworldUuid = context.system.homeworldUuid ?? "";
+
+        // Compendium only (préférence)
+        const homeworlds = await collectItemsOfType("mondeNatal", { preferCompendium: true });
+        context.homeworldChoices = buildHomeworldChoices(homeworlds, context.system.homeworldUuid);
+
+        return context;
+      }
+
+      async _updateObject(event, formData) {
+        if (formData["system.homeworldUuid"] !== undefined && formData["system.homeworldUuid"] !== null) {
+          formData["system.homeworldUuid"] = String(formData["system.homeworldUuid"]).trim();
+        }
+        await this.object.update(formData);
+      }
+    };
+  };
+
+  // --- ItemSheets : Eye/Skin/Hair via factory ---
+  const EyeItemSheet = createHomeworldLinkedItemSheetClass(
+    "eye",
+    `systems/${SYSTEM_ID}/templates/item/eye-sheet.html`
+  );
+  Items.registerSheet(SYSTEM_ID, EyeItemSheet, { types: ["eye"], makeDefault: true });
+
+  const SkinItemSheet = createHomeworldLinkedItemSheetClass(
+    "skin",
+    `systems/${SYSTEM_ID}/templates/item/skin-sheet.html`
+  );
+  Items.registerSheet(SYSTEM_ID, SkinItemSheet, { types: ["skin"], makeDefault: true });
+
+  const HairItemSheet = createHomeworldLinkedItemSheetClass(
+    "hair",
+    `systems/${SYSTEM_ID}/templates/item/hair-sheet.html`
+  );
+  Items.registerSheet(SYSTEM_ID, HairItemSheet, { types: ["hair"], makeDefault: true });
 
   // Register a minimal player actor sheet for this system.
   /**
@@ -264,9 +292,11 @@ Hooks.once("init", () => {
       context.system.attributes.hp = context.system.attributes.hp || { value: 10, max: 10 };
       context.system.attributes.mana = context.system.attributes.mana || { value: 5, max: 5 };
 
-      // Liens Personnage -> Monde natal / Eye
+      // Liens Personnage -> Monde natal / Apparence
       context.system.homeworldUuid = context.system.homeworldUuid ?? "";
       context.system.eyeUuid = context.system.eyeUuid ?? "";
+      context.system.skinUuid = context.system.skinUuid ?? "";
+      context.system.hairUuid = context.system.hairUuid ?? "";
 
       context.canEdit = !!(typeof game !== "undefined" && game.user && game.user.isGM);
       this.canEdit = context.canEdit;
@@ -274,106 +304,34 @@ Hooks.once("init", () => {
 
       const selectedHW = context.system.homeworldUuid;
       const selectedEye = context.system.eyeUuid;
+      const selectedSkin = context.system.skinUuid;
+      const selectedHair = context.system.hairUuid;
 
-      // --- MONDES NATALS (World + Compendiums) ---
-      const homeworlds = [];
+      const homeworlds = await collectItemsOfType("mondeNatal", { preferCompendium: true });
+      context.homeworldChoices = buildSelectedChoices(homeworlds, selectedHW);
+      context.selectedHomeworldName = (homeworlds.find(m => m.uuid === selectedHW)?.name) ?? "";
 
-      try {
-        if (typeof game !== "undefined" && game.items) {
-          for (const it of game.items) {
-            if (it?.type === "mondeNatal") {
-              homeworlds.push({ uuid: it.uuid, name: it.name, source: "World" });
-            }
-          }
-        }
-      } catch (_) {}
+      const eyes = await collectItemsOfType("eye", { includeHomeworld: true, preferCompendium: true });
+      const skins = await collectItemsOfType("skin", { includeHomeworld: true, preferCompendium: true });
+      const hairs = await collectItemsOfType("hair", { includeHomeworld: true, preferCompendium: true });
 
-      try {
-        if (typeof game !== "undefined" && game.packs) {
-          for (const pack of game.packs) {
-            if (pack?.documentName !== "Item") continue;
-            const index = await pack.getIndex({ fields: ["type", "name"] });
-            for (const entry of index) {
-              if (entry.type === "mondeNatal") {
-                homeworlds.push({
-                  uuid: `Compendium.${pack.collection}.${entry._id}`,
-                  name: entry.name,
-                  source: pack.metadata?.label ?? pack.collection
-                });
-              }
-            }
-          }
-        }
-      } catch (_) {}
+      const filterByHomeworld = (arr) => selectedHW ? arr.filter(x => x.homeworldUuid === selectedHW) : [];
 
-      const seenHW = new Set();
-      const hwChoices = homeworlds.filter(m => {
-        if (!m?.uuid) return false;
-        if (seenHW.has(m.uuid)) return false;
-        seenHW.add(m.uuid);
-        return true;
-      });
+      const filteredEyes = filterByHomeworld(eyes);
+      const filteredSkins = filterByHomeworld(skins);
+      const filteredHairs = filterByHomeworld(hairs);
 
-      context.homeworldChoices = hwChoices.map(m => ({
-        ...m,
-        selected: !!(selectedHW && m.uuid === selectedHW)
-      }));
-      context.selectedHomeworldName = (hwChoices.find(m => m.uuid === selectedHW)?.name) ?? "";
+      const eyeChoices = buildSelectedChoices(filteredEyes, selectedEye);
+      const skinChoices = buildSelectedChoices(filteredSkins, selectedSkin);
+      const hairChoices = buildSelectedChoices(filteredHairs, selectedHair);
 
-      // --- EYES (World + Compendiums) filtrés par Monde natal ---
-      const eyes = [];
+      context.eyeChoices = eyeChoices;
+      context.skinChoices = skinChoices;
+      context.hairChoices = hairChoices;
 
-      // World eyes: on peut lire it.system.homeworldUuid directement
-      try {
-        if (typeof game !== "undefined" && game.items) {
-          for (const it of game.items) {
-            if (it?.type === "eye") {
-              eyes.push({
-                uuid: it.uuid,
-                name: it.name,
-                source: "World",
-                homeworldUuid: it.system?.homeworldUuid ?? ""
-              });
-            }
-          }
-        }
-      } catch (_) {}
-
-      // Compendium eyes: via index incluant system.homeworldUuid
-      try {
-        if (typeof game !== "undefined" && game.packs) {
-          for (const pack of game.packs) {
-            if (pack?.documentName !== "Item") continue;
-            const index = await pack.getIndex({ fields: ["type", "name", "system.homeworldUuid"] });
-            for (const entry of index) {
-              if (entry.type === "eye") {
-                eyes.push({
-                  uuid: `Compendium.${pack.collection}.${entry._id}`,
-                  name: entry.name,
-                  source: pack.metadata?.label ?? pack.collection,
-                  homeworldUuid: entry.system?.homeworldUuid ?? ""
-                });
-              }
-            }
-          }
-        }
-      } catch (_) {}
-
-      const filteredEyes = selectedHW ? eyes.filter(e => e.homeworldUuid === selectedHW) : [];
-
-      const seenEye = new Set();
-      const eyeChoices = filteredEyes.filter(e => {
-        if (!e?.uuid) return false;
-        if (seenEye.has(e.uuid)) return false;
-        seenEye.add(e.uuid);
-        return true;
-      });
-
-      context.eyeChoices = eyeChoices.map(e => ({
-        ...e,
-        selected: !!(selectedEye && e.uuid === selectedEye)
-      }));
-      context.selectedEyeName = (eyeChoices.find(e => e.uuid === selectedEye)?.name) ?? "";
+      context.selectedEyeName = (filteredEyes.find(e => e.uuid === selectedEye)?.name) ?? "";
+      context.selectedSkinName = (filteredSkins.find(s => s.uuid === selectedSkin)?.name) ?? "";
+      context.selectedHairName = (filteredHairs.find(h => h.uuid === selectedHair)?.name) ?? "";
 
       return context;
     }
@@ -435,11 +393,19 @@ Hooks.once("init", () => {
         // Reset automatique de l'Eye si le monde natal change
         if (newHomeworld !== prevHomeworld) {
           formData["system.eyeUuid"] = "";
+          formData["system.skinUuid"] = "";
+          formData["system.hairUuid"] = "";
         }
       }
 
       if (formData["system.eyeUuid"] !== undefined && formData["system.eyeUuid"] !== null) {
         formData["system.eyeUuid"] = String(formData["system.eyeUuid"]).trim();
+      }
+      if (formData["system.skinUuid"] !== undefined && formData["system.skinUuid"] !== null) {
+        formData["system.skinUuid"] = String(formData["system.skinUuid"]).trim();
+      }
+      if (formData["system.hairUuid"] !== undefined && formData["system.hairUuid"] !== null) {
+        formData["system.hairUuid"] = String(formData["system.hairUuid"]).trim();
       }
 
       await this.object.update(formData);
@@ -461,9 +427,11 @@ Hooks.on("preCreateActor", (actor, createData, options, userId) => {
   createData.system = createData.system || {};
   createData.system.attributes = createData.system.attributes || {};
 
-  // Initialiser les liens personnage -> Monde natal / Eye
+  // Initialiser les liens personnage -> Monde natal / Apparence
   if (createData.system.homeworldUuid === undefined) createData.system.homeworldUuid = "";
   if (createData.system.eyeUuid === undefined) createData.system.eyeUuid = "";
+  if (createData.system.skinUuid === undefined) createData.system.skinUuid = "";
+  if (createData.system.hairUuid === undefined) createData.system.hairUuid = "";
 
   const attrs = createData.system.attributes;
   for (const k of Object.keys(attrs)) {

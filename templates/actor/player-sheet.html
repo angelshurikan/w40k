@@ -83,6 +83,56 @@
         <span class="readonly-field">{{selectedEyeName}}</span>
       {{/if}}
     </div>
+
+    <div class="form-group">
+      <label for="skin-uuid-enabled">Peau</label>
+      {{#if canEdit}}
+        {{#if system.homeworldUuid}}
+          <select id="skin-uuid-enabled" name="system.skinUuid">
+            <option value="">— Aucun —</option>
+            {{#each skinChoices as |s|}}
+              {{#if s.selected}}
+                <option value="{{s.uuid}}" selected>{{s.name}}{{#if s.source}} ({{s.source}}){{/if}}</option>
+              {{else}}
+                <option value="{{s.uuid}}">{{s.name}}{{#if s.source}} ({{s.source}}){{/if}}</option>
+              {{/if}}
+            {{/each}}
+          </select>
+        {{else}}
+          <label for="skin-uuid-disabled" class="sr-only">Peau</label>
+          <select id="skin-uuid-disabled" name="system.skinUuid" disabled>
+            <option value="">— Aucun —</option>
+          </select>
+        {{/if}}
+      {{else}}
+        <span class="readonly-field">{{selectedSkinName}}</span>
+      {{/if}}
+    </div>
+
+    <div class="form-group">
+      <label for="hair-uuid-enabled">Cheveu</label>
+      {{#if canEdit}}
+        {{#if system.homeworldUuid}}
+          <select id="hair-uuid-enabled" name="system.hairUuid">
+            <option value="">— Aucun —</option>
+            {{#each hairChoices as |h|}}
+              {{#if h.selected}}
+                <option value="{{h.uuid}}" selected>{{h.name}}{{#if h.source}} ({{h.source}}){{/if}}</option>
+              {{else}}
+                <option value="{{h.uuid}}">{{h.name}}{{#if h.source}} ({{h.source}}){{/if}}</option>
+              {{/if}}
+            {{/each}}
+          </select>
+        {{else}}
+          <label for="hair-uuid-disabled" class="sr-only">Cheveu</label>
+          <select id="hair-uuid-disabled" name="system.hairUuid" disabled>
+            <option value="">— Aucun —</option>
+          </select>
+        {{/if}}
+      {{else}}
+        <span class="readonly-field">{{selectedHairName}}</span>
+      {{/if}}
+    </div>
   </section>
 
   <footer class="sheet-footer">
