@@ -7,11 +7,6 @@
   </header>
 
   <section class="sheet-body">
-    <div class="form-group">
-      <label for="planet-label">Origine / planète natale</label>
-      <input id="planet-label" type="text" name="system.planetLabel" value="{{system.planetLabel}}" />
-    </div>
-
     <hr />
 
     <h2>Caractéristiques (valeurs par défaut)</h2>
@@ -82,6 +77,17 @@
     <hr />
 
     <h2>Description</h2>
-    {{editor item.details.description target="details.description" button=true owner=owner editable=editable}}
+
+    <div class="form-group">
+      <label for="details-description">Texte</label>
+      <textarea id="details-description" name="details.description" rows="8">{{item.details.description}}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="sr-only" for="details-description-editor">Éditeur</label>
+      <div id="details-description-editor">
+        {{editor item.details.description target="details.description" button=true owner=owner editable=editable}}
+      </div>
+    </div>
   </section>
 </form>

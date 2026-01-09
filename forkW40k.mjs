@@ -75,7 +75,6 @@ Hooks.once("init", () => {
       context.system = this.item.system || {};
 
       // Valeurs par défaut non persistées (évite les undefined dans l'UI)
-      context.system.planetLabel = context.system.planetLabel ?? "";
       context.system.stats = context.system.stats ?? {};
 
       const s = context.system.stats;

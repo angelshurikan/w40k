@@ -5,7 +5,6 @@
 > - `MondeNatal` est un **Item** de type `mondeNatal`.
 > - Champs (implémentation actuelle) :
 >   - `item.name` → `title`
->   - `item.system.planetLabel` → `planetLabel`
 >   - `item.details.description` → `description`
 >   - `item.system.stats.*` → caractéristiques :
 >     `weaponSkill`, `ballisticSkill`, `strength`, `toughness`, `agility`, `intelligence`,
@@ -42,7 +41,6 @@ classDiagram
       int id
       string title
       string description
-      string planetLabel
       ---
       int weaponSkill
       int ballisticSkill
@@ -58,20 +56,6 @@ classDiagram
       int corruption
     }
 
-    class Items {
-        # Liste des items Age,Peau,DescriptionPhysique,Cheveux,Yeux,Comportement,ParticularitePhysique,Carriere,Trait,PlaneteNatal,EffetAssermentation,DivinationImperiales
-      int id
-      string name
-      string slug
-      string description
-      ----
-      string entity
-      string label
-      int number
-    }
-
     %% MondeNatal définit les valeurs de base (copiées) des caractéristiques du Personnage
     Personnage <|-- MondeNatal
-    Personnage <|-- Items
-    MondeNatal --|> Items
 ````
