@@ -71,7 +71,7 @@ Hooks.once("init", () => {
 
     /**
      * Récupère les données pour le template. Nous fournissons `system` comme alias de actor.system
-     * pour faciliter l'accès dans Handlebars.
+     * pour faciliter l'accès dans Handlebars. On expose également `canEdit` (seuls les MJ peuvent éditer).
      */
     getData(options) {
       const context = super.getData(options);
@@ -81,26 +81,50 @@ Hooks.once("init", () => {
       context.system.attributes = context.system.attributes || {};
       context.system.attributes.hp = context.system.attributes.hp || { value: 10, max: 10 };
       context.system.attributes.mana = context.system.attributes.mana || { value: 5, max: 5 };
+
+      // Déterminer si l'utilisateur courant peut éditer (ici : seulement les GMs)
+      context.canEdit = (typeof game !== "undefined" && game.user && game.user.isGM) ? true : false;
+      // stocker localement pour accès dans les méthodes
+      this.canEdit = context.canEdit;
+
+      // Attribut HTML prêt à injecter dans les inputs (soit '', soit 'disabled')
+      context.canEditAttr = context.canEdit ? '' : 'disabled';
+
       return context;
     }
 
     /**
-     * Activer les listeners (ex. boutons). Ici aucun contrôle spécifique nécessaire, mais
-     * la méthode est fournie pour extension future.
+     * Activer les listeners (ex. boutons). Ici on empêche la soumission si l'utilisateur n'est pas autorisé.
      */
     activateListeners(html) {
       super.activateListeners(html);
-      // Exemple : empêcher les champs numériques d'être vides
+      // Empêcher champs numériques vides
       html.find('input[type="number"]').on('change', ev => {
         const input = ev.currentTarget;
         if (input.value === "") input.value = 0;
       });
+
+      // Bloquer la soumission pour les utilisateurs non autorisés
+      html.find('form').on('submit', ev => {
+        if (!this.canEdit) {
+          ev.preventDefault();
+          ui.notifications?.warn("Vous n'êtes pas autorisé à modifier cette fiche.");
+          return false;
+        }
+      });
     }
 
     /**
-     * Soumet le formulaire et met à jour l'acteur.
+     * Soumet le formulaire et met à jour l'acteur. La validation/clamping n'est appliquée que
+     * si l'utilisateur a le droit d'éditer (MJ).
      */
     async _updateObject(event, formData) {
+      if (!this.canEdit) {
+        // Sécurité côté client : ne pas tenter la mise à jour
+        ui.notifications?.warn("Modification interdite : seuls les MJ peuvent modifier les données du personnage.");
+        return;
+      }
+
       // Sanitize and clamp numeric fields for hp and mana
       const hpValueKey = "system.attributes.hp.value";
       const hpMaxKey = "system.attributes.hp.max";
@@ -145,7 +169,7 @@ Hooks.once("init", () => {
         formData[manaValueKey] = Math.max(0, Math.min(raw, max));
       }
 
-      // Finally, update the actor with the sanitized formData
+      // Enfin, mettre à jour l'acteur avec le formData assainie
       await this.object.update(formData);
     }
   }
@@ -178,6 +202,25 @@ Hooks.once("init", () => {
     } else {
       attrs.mana.value = (attrs.mana.value !== undefined) ? Number(attrs.mana.value) : 5;
       attrs.mana.max = (attrs.mana.max !== undefined) ? Math.max(0, Number(attrs.mana.max)) : 5;
+    }
+  });
+
+  // Bloquer côté serveur / hooks pré-update : empêcher les utilisateurs non-GM de modifier les champs système / nom
+  Hooks.on("preUpdateActor", (actor, update, options, userId) => {
+    try {
+      const user = typeof game !== "undefined" ? game.users.get(userId) : null;
+      if (user && user.isGM) return; // autorisé pour MJ
+
+      // Autoriser uniquement les mises à jour touches 'token' (par exemple) pour les non-MJ
+      const keys = Object.keys(update || {});
+      const disallowed = ["system", "name"];
+      if (keys.some(k => disallowed.includes(k))) {
+        ui.notifications?.warn("Modification interdite : seuls les MJ peuvent modifier les données du personnage.");
+        return false; // empêche la mise à jour
+      }
+    } catch (err) {
+      // En cas d'erreur, on ne bloque pas la mise à jour pour éviter d'empêcher des opérations légitimes
+      return;
     }
   });
 
